@@ -28,7 +28,13 @@ export function useSupabase() {
       .select();
       
     if (error) throw error;
+    if (error) throw error;
     return data[0];
+  };
+
+  const deleteTrack = async (id) => {
+     const { error } = await supabase.from('tracks').delete().eq('id', id);
+     if (error) throw error;
   };
 
   const getSessions = async (trackId) => {
@@ -65,6 +71,12 @@ export function useSupabase() {
       }
       throw err;
     }
+  };
+
+  const deleteSession = async (id) => {
+     if (id.toString().startsWith('temp-')) return; 
+     const { error } = await supabase.from('sessions').delete().eq('id', id);
+     if (error) throw error;
   };
 
   const getMilestones = async (trackId) => {
@@ -109,5 +121,10 @@ export function useSupabase() {
      return data[0];
   };
 
-  return { getTracks, createTrack, getSessions, getAllSessions, logSession, getMilestones, logMilestone, updateMilestone };
+  const deleteMilestone = async (id) => {
+     const { error } = await supabase.from('milestones').delete().eq('id', id);
+     if (error) throw error;
+  };
+
+  return { getTracks, createTrack, deleteTrack, getSessions, getAllSessions, logSession, deleteSession, getMilestones, logMilestone, updateMilestone, deleteMilestone };
 }

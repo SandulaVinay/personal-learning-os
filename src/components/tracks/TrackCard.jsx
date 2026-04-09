@@ -5,11 +5,11 @@ import SessionLogger from './SessionLogger';
 import SessionHistory from './SessionHistory';
 import MilestoneLogger from './MilestoneLogger';
 import MilestoneHistory from './MilestoneHistory';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 
 export default function TrackCard({ track }) {
   const isTime = track.type === 'session';
-  const { getSessions, getMilestones, logSession, logMilestone } = useSupabase();
+  const { getSessions, getMilestones, logSession, logMilestone, deleteTrack } = useSupabase();
   
   const [expanded, setExpanded] = useState(false);
   const [sessions, setSessions] = useState([]);
@@ -87,7 +87,15 @@ export default function TrackCard({ track }) {
       {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="font-bold text-lg text-slate-900">{track.name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-lg text-slate-900">{track.name}</h3>
+            <button onClick={async () => {
+               if (confirm("Are you sure you want to completely delete this track? This breaks all stats associated with it!")) {
+                 await deleteTrack(track.id);
+                 window.location.reload();
+               }
+            }} className="text-slate-300 hover:text-red-500 transition"><Trash2 size={14}/></button>
+          </div>
           {progressBadge && (
             <span className="inline-block mt-1 text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded uppercase tracking-wider">
               {progressBadge}

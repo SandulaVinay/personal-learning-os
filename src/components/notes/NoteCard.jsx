@@ -1,4 +1,8 @@
-export default function NoteCard({ note, minimize = false }) {
+import { Trash2 } from 'lucide-react';
+import { useNotes } from '../../hooks/useNotes';
+
+export default function NoteCard({ note, minimize = false, onDeleted }) {
+  const { deleteNote } = useNotes();
   const tagColors = {
     high: 'bg-red-100 text-red-800 border-red-200',
     medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -12,9 +16,20 @@ export default function NoteCard({ note, minimize = false }) {
          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${tagColors[note.tag]}`}>
            {note.tag}
          </span>
-         <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
-           {new Date(note.created_at).toLocaleDateString()}
-         </span>
+         <div className="flex gap-3 items-center">
+           <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+             {new Date(note.created_at).toLocaleDateString()}
+           </span>
+           <button onClick={async () => {
+              if (confirm('Delete this note?')) {
+                 await deleteNote(note.id);
+                 if (onDeleted) onDeleted(note.id);
+                 else window.location.reload();
+              }
+           }} className="text-slate-300 hover:text-red-500 transition">
+              <Trash2 size={14}/>
+           </button>
+         </div>
        </div>
        
        <div className={`prose prose-sm prose-slate max-w-none text-slate-800 font-medium leading-relaxed whitespace-pre-wrap ${minimize ? 'text-xs line-clamp-3' : 'text-[13px] mb-4'}`}>

@@ -39,5 +39,10 @@ export function useJobs() {
     return data[0];
   };
 
-  return { getJobs, createJob, updateJob };
+  const deleteJob = async (id) => {
+    const { error } = await supabase.from('jobs').delete().eq('id', id);
+    if (error) throw error;
+  };
+
+  return { getJobs, createJob, updateJob, deleteJob };
 }

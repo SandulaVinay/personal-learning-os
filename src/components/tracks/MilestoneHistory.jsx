@@ -1,8 +1,8 @@
 import { useSupabase } from '../../hooks/useSupabase';
 import { Check, X, Clock } from 'lucide-react';
 
-export default function MilestoneHistory({ milestones, onUpdate }) {
-  const { updateMilestone } = useSupabase();
+export default function MilestoneHistory({ milestones, onUpdate, onDeleted }) {
+  const { updateMilestone, deleteMilestone } = useSupabase();
 
   if (!milestones || milestones.length === 0) {
     return <p className="text-sm text-slate-500 italic">No milestones yet.</p>;
@@ -37,6 +37,14 @@ export default function MilestoneHistory({ milestones, onUpdate }) {
                  <button title="Fail" onClick={() => handleStatusToggle(m, 'fail')} className={`p-1 rounded ${m.outcome === 'fail' ? 'bg-red-500 text-white shadow-sm' : 'hover:bg-red-100'} transition`}><X size={14}/></button>
                  <button title="Pending" onClick={() => handleStatusToggle(m, 'pending')} className={`p-1 rounded ${m.outcome === 'pending' ? 'bg-slate-700 text-white shadow-sm' : 'hover:bg-slate-200'} transition`}><Clock size={14}/></button>
               </div>
+              
+              <button title="Delete" onClick={async () => {
+                 if (confirm('Delete milestone?')) {
+                    await deleteMilestone(m.id);
+                    if (onDeleted) onDeleted(m.id);
+                    else window.location.reload();
+                 }
+              }} className="p-1 rounded text-slate-300 hover:text-red-500 transition"><Trash2 size={14}/></button>
            </div>
            
            {m.note && <p className="text-[12px] opacity-80 font-medium leading-tight mb-2">"{m.note}"</p>}

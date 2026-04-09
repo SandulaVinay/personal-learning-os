@@ -1,4 +1,8 @@
-export default function SessionHistory({ sessions, track }) {
+import { useSupabase } from '../../hooks/useSupabase';
+import { Trash2 } from 'lucide-react';
+
+export default function SessionHistory({ sessions, track, onDeleted }) {
+  const { deleteSession } = useSupabase();
   if (!sessions || sessions.length === 0) {
     return <p className="text-sm text-slate-500 italic">No history yet. Start learning!</p>;
   }
@@ -30,9 +34,20 @@ export default function SessionHistory({ sessions, track }) {
           <div key={session.id} className="text-sm p-3 bg-slate-50 rounded-lg border border-slate-100 shadow-sm">
             <div className="flex justify-between font-bold text-slate-800 mb-1">
               <span>{Math.floor(session.duration_minutes / 60)}h {session.duration_minutes % 60}m</span>
-              <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                {new Date(session.logged_at).toLocaleDateString()}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                  {new Date(session.logged_at).toLocaleDateString()}
+                </span>
+                <button onClick={async () => {
+                  if (confirm('Delete this session?')) {
+                     await deleteSession(session.id);
+                     if (onDeleted) onDeleted(session.id);
+                     else window.location.reload();
+                  }
+                }} className="text-slate-300 hover:text-red-500 transition">
+                  <Trash2 size={14}/>
+                </button>
+              </div>
             </div>
             
             {movementText && (

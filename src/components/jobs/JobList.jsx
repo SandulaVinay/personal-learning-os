@@ -1,7 +1,8 @@
+import { Trash2 } from 'lucide-react';
 import { useJobs } from '../../hooks/useJobs';
 
-export default function JobList({ jobs, onJobUpdated }) {
-  const { updateJob } = useJobs();
+export default function JobList({ jobs, onJobUpdated, onJobDeleted }) {
+  const { updateJob, deleteJob } = useJobs();
 
   if (!jobs || jobs.length === 0) {
     return (
@@ -54,6 +55,15 @@ export default function JobList({ jobs, onJobUpdated }) {
                <option value="offer">Offer 🎉</option>
                <option value="rejected">Rejected</option>
             </select>
+            <button onClick={async () => {
+               if (confirm('Delete application?')) {
+                  await deleteJob(job.id);
+                  if (onJobDeleted) onJobDeleted(job.id);
+                  else window.location.reload();
+               }
+            }} className="text-slate-300 hover:text-red-500 transition p-1">
+               <Trash2 size={16}/>
+            </button>
           </div>
         </div>
       ))}

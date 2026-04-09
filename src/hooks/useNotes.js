@@ -44,6 +44,11 @@ export function useNotes() {
     if (error) throw error;
     return data[0];
   };
+  
+  const deleteNote = async (id) => {
+    const { error } = await supabase.from('notes').delete().eq('id', id);
+    if (error) throw error;
+  };
 
-  return { getNotes, getHighPriorityNotes, createNote };
+  return { getNotes, getHighPriorityNotes, createNote, deleteNote };
 }
