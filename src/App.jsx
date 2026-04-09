@@ -42,7 +42,7 @@ function LoginScreen() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <OfflineStatus />
         <Routes>
           <Route path="/login" element={<LoginScreen />} />
