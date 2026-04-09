@@ -1,5 +1,5 @@
 import { useSupabase } from '../../hooks/useSupabase';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X, Clock, Trash2 } from 'lucide-react';
 
 export default function MilestoneHistory({ milestones, onUpdate, onDeleted }) {
   const { updateMilestone, deleteMilestone } = useSupabase();
