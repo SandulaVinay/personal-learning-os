@@ -37,6 +37,17 @@ export function useSupabase() {
      if (error) throw error;
   };
 
+  const updateTrack = async (id, updates) => {
+    if (!user) throw new Error('Not logged in');
+    const { data, error } = await supabase
+      .from('tracks')
+      .update(updates)
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    return data[0];
+  };
+
   const getSessions = async (trackId) => {
     const { data, error } = await supabase
       .from('sessions')
@@ -77,6 +88,17 @@ export function useSupabase() {
      if (id.toString().startsWith('temp-')) return; 
      const { error } = await supabase.from('sessions').delete().eq('id', id);
      if (error) throw error;
+  };
+
+  const updateSession = async (id, updates) => {
+    if (!user) throw new Error('Not logged in');
+    const { data, error } = await supabase
+      .from('sessions')
+      .update(updates)
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    return data[0];
   };
 
   const getMilestones = async (trackId) => {
@@ -126,5 +148,5 @@ export function useSupabase() {
      if (error) throw error;
   };
 
-  return { getTracks, createTrack, deleteTrack, getSessions, getAllSessions, logSession, deleteSession, getMilestones, logMilestone, updateMilestone, deleteMilestone };
+  return { getTracks, createTrack, updateTrack, deleteTrack, getSessions, getAllSessions, logSession, updateSession, deleteSession, getMilestones, logMilestone, updateMilestone, deleteMilestone };
 }

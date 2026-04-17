@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../components/shared/AuthProvider';
 import { useNotes } from '../hooks/useNotes';
 import { useSupabase } from '../hooks/useSupabase';
@@ -9,6 +10,7 @@ import TrackCard from '../components/tracks/TrackCard';
 import VelocityChart from '../components/dashboard/VelocityChart';
 import NudgeCard from '../components/dashboard/NudgeCard';
 import JobSummaryCard from '../components/dashboard/JobSummaryCard';
+import ActivityCalendar from '../components/dashboard/ActivityCalendar';
 
 export default function Home() {
   const { user } = useAuth();
@@ -66,20 +68,21 @@ export default function Home() {
                <div className="bg-slate-50 border-2 border-dashed border-slate-200 p-10 rounded-xl text-center">
                  <h3 className="font-bold text-slate-700 text-lg mb-2">Your slate is clean</h3>
                  <p className="text-slate-500 text-sm mb-4">You have no tracks running right now. Ready to start learning?</p>
-                 <a href="/tracks" className="inline-block px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition">Create a Track</a>
+                 <Link to="/tracks" className="inline-block px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition">Create a Track</Link>
                </div>
             )}
          </div>
          
          {/* Right Side (Col span 1) */}
          <div className="lg:col-span-1 flex flex-col gap-6">
+            <ActivityCalendar sessions={sessions} />
             <JobSummaryCard jobs={jobs} />
             
             {tracks.length > 0 && (
-              <div className="bg-blue-50 border border-blue-100 p-6 rounded-xl">
+               <div className="bg-blue-50 border border-blue-100 p-6 rounded-xl">
                  <h3 className="font-extrabold text-blue-900 mb-2">Track Overview</h3>
                  <p className="text-sm text-blue-800 font-medium">You are actively managing <strong>{tracks.length}</strong> parallel learning objectives.</p>
-                 <a href="/tracks" className="inline-block mt-4 text-xs font-bold bg-blue-200 text-blue-900 px-3 py-1.5 rounded-md hover:bg-blue-300 transition">Jump to Tracks →</a>
+                 <Link to="/tracks" className="inline-block mt-4 text-xs font-bold bg-blue-200 text-blue-900 px-3 py-1.5 rounded-md hover:bg-blue-300 transition">Jump to Tracks →</Link>
               </div>
             )}
          </div>

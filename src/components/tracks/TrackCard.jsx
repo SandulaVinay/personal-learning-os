@@ -5,16 +5,20 @@ import SessionLogger from './SessionLogger';
 import SessionHistory from './SessionHistory';
 import MilestoneLogger from './MilestoneLogger';
 import MilestoneHistory from './MilestoneHistory';
-import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, Edit2, Check, X } from 'lucide-react';
 
 export default function TrackCard({ track }) {
   const isTime = track.type === 'session';
-  const { getSessions, getMilestones, logSession, logMilestone, deleteTrack } = useSupabase();
+  const { getSessions, getMilestones, logSession, logMilestone, deleteTrack, updateTrack } = useSupabase();
   
   const [expanded, setExpanded] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [milestones, setMilestones] = useState([]);
   
+  // Track Edit State
+  const [editingTrack, setEditingTrack] = useState(false);
+  const [editTrackData, setEditTrackData] = useState({ name: '', target_count: '', target_hours: '' });
+
   useEffect(() => {
     if (isTime) {
       getSessions(track.id).then(setSessions);
@@ -35,6 +39,30 @@ export default function TrackCard({ track }) {
 
   const handleMilestoneUpdate = (updated) => {
     setMilestones(milestones.map(m => m.id === updated.id ? updated : m));
+  };
+  
+  const startEditTrack = () => {
+    setEditingTrack(true);
+    setEditTrackData({
+      name: track.name,
+      target_count: track.target_count || '',
+      target_hours: track.target_hours || ''
+    });
+  };
+
+  const saveEditTrack = async () => {
+    try {
+      const updates = { name: editTrackData.name };
+      if (editTrackData.target_count !== '') updates.target_count = Number(editTrackData.target_count);
+      else updates.target_count = null;
+      if (editTrackData.target_hours !== '') updates.target_hours = Number(editTrackData.target_hours);
+      else updates.target_hours = null;
+      
+      await updateTrack(track.id, updates);
+      window.location.reload();
+    } catch(e) {
+      alert("Failed to update track. Ensure SQL UPDATE policies are enabled in Supabase.");
+    }
   };
 
   // -------------------------------------------------------------
@@ -74,11 +102,9 @@ export default function TrackCard({ track }) {
      for (let m of milestones) {
        if (m.outcome === 'pass') streak++;
        else if (m.outcome === 'fail') break; 
-       // Ignored pending ones for streak destruction? Spec didn't say, let's break on fail
      }
   }
 
-  // Combine top level metadata depending on type
   const lastActiveText = isTime ? sessionLastActive : mmLastActive;
 
   return (
@@ -86,34 +112,83 @@ export default function TrackCard({ track }) {
       
       {/* Header */}
       <div className="flex justify-between items-start mb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-lg text-slate-900">{track.name}</h3>
-            <button onClick={async () => {
-               if (confirm("Are you sure you want to completely delete this track? This breaks all stats associated with it!")) {
-                 await deleteTrack(track.id);
-                 window.location.reload();
-               }
-            }} className="text-slate-300 hover:text-red-500 transition"><Trash2 size={14}/></button>
+        {editingTrack ? (
+          <div className="flex-1 mr-4 bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-inner">
+             <div className="flex flex-col gap-2">
+                <input 
+                  type="text" 
+                  value={editTrackData.name} 
+                  onChange={e => setEditTrackData({...editTrackData, name: e.target.value})} 
+                  placeholder="Track Name"
+                  className="font-bold text-sm border border-slate-300 rounded px-2 py-1.5 focus:outline-blue-500"
+                />
+                <div className="flex gap-2">
+                   {isTime && (
+                     <div className="flex flex-col gap-1 w-1/2">
+                       <label className="text-[10px] font-bold text-slate-500 uppercase">Target Hours</label>
+                       <input 
+                         type="number" 
+                         value={editTrackData.target_hours} 
+                         onChange={e => setEditTrackData({...editTrackData, target_hours: e.target.value})} 
+                         placeholder="e.g. 100"
+                         className="text-xs border border-slate-300 rounded px-2 py-1.5"
+                       />
+                     </div>
+                   )}
+                   <div className="flex flex-col gap-1 flex-1">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase">{isTime ? 'Target Pages (Optional)' : 'Target Count (Optional)'}</label>
+                     <input 
+                       type="number" 
+                       value={editTrackData.target_count} 
+                       onChange={e => setEditTrackData({...editTrackData, target_count: e.target.value})} 
+                       placeholder="e.g. 400"
+                       className="text-xs border border-slate-300 rounded px-2 py-1.5"
+                     />
+                   </div>
+                </div>
+                <div className="flex gap-2 justify-end mt-2">
+                   <button onClick={saveEditTrack} className="bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-1.5 text-xs font-bold transition flex items-center gap-1"><Check size={14}/> Save</button>
+                   <button onClick={() => setEditingTrack(false)} className="bg-slate-300 hover:bg-slate-400 text-slate-800 rounded px-3 py-1.5 text-xs font-bold transition flex items-center gap-1"><X size={14}/> Cancel</button>
+                </div>
+             </div>
           </div>
-          {progressBadge && (
-            <span className="inline-block mt-1 text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded uppercase tracking-wider">
-              {progressBadge}
-            </span>
-          )}
-        </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-2 group">
+              <h3 className="font-bold text-lg text-slate-900">{track.name}</h3>
+              
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={startEditTrack} className="text-slate-300 hover:text-blue-500 transition p-1 bg-white rounded shadow-sm border border-slate-100">
+                  <Edit2 size={12}/>
+                </button>
+                <button onClick={async () => {
+                   if (confirm("Are you sure you want to completely delete this track? This breaks all stats associated with it!")) {
+                     await deleteTrack(track.id);
+                     window.location.reload();
+                   }
+                }} className="text-slate-300 hover:text-red-500 transition p-1 bg-white rounded shadow-sm border border-slate-100">
+                  <Trash2 size={12}/>
+                </button>
+              </div>
+            </div>
+            {progressBadge && (
+              <span className="inline-block mt-1 text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded uppercase tracking-wider">
+                {progressBadge}
+              </span>
+            )}
+          </div>
+        )}
         <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-widest flex-shrink-0 ${isTime ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-purple-50 text-purple-600 border border-purple-100'}`}>
           {isTime ? 'Time' : 'Milestone'}
         </span>
       </div>
       
-      {track.description && (
+      {track.description && !editingTrack && (
         <p className="text-sm text-slate-500 mb-5 line-clamp-2 leading-relaxed">{track.description}</p>
       )}
 
       {/* Grid Stats */}
       <div className="grid grid-cols-3 gap-2 mt-4">
-        {/* Metric 1 */}
         <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">
           <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">
             {isTime ? 'Active' : 'Streak'}
@@ -123,7 +198,6 @@ export default function TrackCard({ track }) {
           </p>
         </div>
         
-        {/* Metric 2 */}
         <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">
            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">
              {isTime ? 'Hours' : 'Win Rate'}
@@ -133,7 +207,6 @@ export default function TrackCard({ track }) {
            </p>
         </div>
         
-        {/* Metric 3 (Target) */}
         <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">
           <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Target</p>
           <p className="font-bold text-slate-800 text-[12px] leading-tight flex items-center justify-center">
