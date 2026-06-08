@@ -122,6 +122,16 @@ export function useSupabase() {
     return data || [];
   };
 
+  const getAllMilestones = async () => {
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from('milestones')
+      .select('*')
+      .order('logged_at', { ascending: false });
+    if (error) console.error('Error fetching all milestones:', error);
+    return data || [];
+  };
+
   const logMilestone = async (milestoneData) => {
     if (!user) throw new Error('Not logged in');
     const { data, error } = await supabase
@@ -146,7 +156,7 @@ export function useSupabase() {
   const deleteMilestone = async (id) => {
      const { error } = await supabase.from('milestones').delete().eq('id', id);
      if (error) throw error;
-  };
+   };
 
-  return { getTracks, createTrack, updateTrack, deleteTrack, getSessions, getAllSessions, logSession, updateSession, deleteSession, getMilestones, logMilestone, updateMilestone, deleteMilestone };
+  return { getTracks, createTrack, updateTrack, deleteTrack, getSessions, getAllSessions, getAllMilestones, logSession, updateSession, deleteSession, getMilestones, logMilestone, updateMilestone, deleteMilestone };
 }

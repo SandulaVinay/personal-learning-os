@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { useJobs } from '../../hooks/useJobs';
+import confetti from 'canvas-confetti';
 
 export default function JobList({ jobs, onJobUpdated, onJobDeleted }) {
   const { updateJob, deleteJob } = useJobs();
@@ -18,6 +19,21 @@ export default function JobList({ jobs, onJobUpdated, onJobDeleted }) {
     try {
       const updated = await updateJob(job.id, newStatus, job.notes);
       onJobUpdated(updated);
+      if (newStatus === 'offer') {
+         // Celebratory double-burst
+         confetti({
+           particleCount: 150,
+           spread: 80,
+           origin: { y: 0.6 }
+         });
+         setTimeout(() => {
+           confetti({
+             particleCount: 100,
+             spread: 100,
+             origin: { y: 0.5 }
+           });
+         }, 350);
+      }
     } catch(e) {
       alert("Failed to update status");
     }

@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import Tracks from './pages/Tracks';
 import Notes from './pages/Notes';
 import Jobs from './pages/Jobs';
+import History from './pages/History';
+import AIInsights from './pages/AIInsights';
 import OfflineStatus from './components/shared/OfflineStatus';
 
 function LoginScreen() {
@@ -56,6 +58,8 @@ export default function App() {
             <Route path="tracks" element={<Tracks />} />
             <Route path="notes" element={<Notes />} />
             <Route path="jobs" element={<Jobs />} />
+            <Route path="history" element={<History />} />
+            <Route path="ai" element={<AIInsights />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSupabase } from '../../hooks/useSupabase';
+import confetti from 'canvas-confetti';
 import TimerWidget from './TimerWidget';
 import SessionLogger from './SessionLogger';
 import SessionHistory from './SessionHistory';
@@ -30,6 +31,11 @@ export default function TrackCard({ track }) {
   const handleSessionLogged = async (data) => {
     const newSession = await logSession(data);
     setSessions([newSession, ...sessions]);
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
   };
 
   const handleMilestoneLogged = async (data) => {

@@ -11,6 +11,8 @@ export default function NavBar() {
     { name: 'Tracks', path: '/tracks' },
     { name: 'Notes Vault', path: '/notes' },
     { name: 'Jobs', path: '/jobs' },
+    { name: 'History', path: '/history' },
+    { name: 'AI Insights', path: '/ai' },
   ];
 
   return (

@@ -1,14 +1,15 @@
 import { useMemo } from 'react';
 import { Flame, BookOpen, XCircle, Clock } from 'lucide-react';
 
-export default function ActivityCalendar({ sessions }) {
+export default function ActivityCalendar({ sessions, currentMonthDate }) {
+   const monthDate = currentMonthDate ? new Date(currentMonthDate) : new Date();
    const now = new Date();
    now.setHours(0,0,0,0);
-   const currentMonth = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+   const currentMonth = monthDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
    const grid = useMemo(() => {
-      const year = now.getFullYear();
-      const month = now.getMonth();
+      const year = monthDate.getFullYear();
+      const month = monthDate.getMonth();
       const numDays = new Date(year, month + 1, 0).getDate();
       const firstDay = new Date(year, month, 1).getDay();
       
@@ -23,7 +24,7 @@ export default function ActivityCalendar({ sessions }) {
          arr.push(d);
       }
       return arr;
-   }, [now]);
+   }, [monthDate]);
 
    const activityMap = useMemo(() => {
       const map = {};

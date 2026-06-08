@@ -1,5 +1,6 @@
 import { useSupabase } from '../../hooks/useSupabase';
 import { Check, X, Clock, Trash2 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 export default function MilestoneHistory({ milestones, onUpdate, onDeleted }) {
   const { updateMilestone, deleteMilestone } = useSupabase();
@@ -13,6 +14,13 @@ export default function MilestoneHistory({ milestones, onUpdate, onDeleted }) {
     try {
       const updated = await updateMilestone(m.id, { outcome: newStatus });
       onUpdate(updated);
+      if (newStatus === 'pass') {
+         confetti({
+           particleCount: 80,
+           spread: 60,
+           origin: { y: 0.7 }
+         });
+      }
     } catch (e) {
       alert("Failed to update status");
     }
