@@ -201,8 +201,7 @@ export default function History() {
 
     // 1. Filter by Track if a specific track is selected
     if (selectedTrackId !== 'all') {
-      const trackIdNum = Number(selectedTrackId);
-      list = list.filter(act => act.raw && act.raw.track_id === trackIdNum);
+      list = list.filter(act => act.raw && act.raw.track_id?.toString() === selectedTrackId.toString());
     }
 
     // 2. Filter by Month (only if timeRange is 'monthly')
@@ -225,8 +224,7 @@ export default function History() {
 
     // Filter by Track
     if (selectedTrackId !== 'all') {
-      const trackIdNum = Number(selectedTrackId);
-      list = list.filter(act => act.raw && act.raw.track_id === trackIdNum);
+      list = list.filter(act => act.raw && act.raw.track_id?.toString() === selectedTrackId.toString());
     }
 
     // Filter by Month (if monthly view active)
