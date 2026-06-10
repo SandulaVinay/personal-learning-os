@@ -2,7 +2,7 @@ import { useState } from 'react';
 import NoteCard from './NoteCard';
 import { Search } from 'lucide-react';
 
-export default function NotesList({ notes }) {
+export default function NotesList({ notes, onNoteUpdated, onNoteDeleted }) {
   const [filterTag, setFilterTag] = useState('all');
   const [filterQuery, setFilterQuery] = useState('');
 
@@ -60,7 +60,14 @@ export default function NotesList({ notes }) {
         <p className="text-center py-10 text-slate-500 font-medium italic">No notes match your filters.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(n => <NoteCard key={n.id} note={n} />)}
+          {filtered.map(n => (
+            <NoteCard 
+              key={n.id} 
+              note={n} 
+              onUpdated={onNoteUpdated}
+              onDeleted={onNoteDeleted}
+            />
+          ))}
         </div>
       )}
     </div>

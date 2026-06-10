@@ -17,6 +17,8 @@ export default function Notes() {
   }, []);
 
   const handleAdded = (n) => setNotes([n, ...notes]);
+  const handleUpdated = (updated) => setNotes(notes.map(n => n.id === updated.id ? updated : n));
+  const handleDeleted = (id) => setNotes(notes.filter(n => n.id !== id));
 
   return (
     <div className="p-4 md:p-8 animate-in fade-in duration-500">
@@ -33,7 +35,7 @@ export default function Notes() {
       {loading ? (
          <div className="flex justify-center py-20 text-slate-400 font-medium">Loading your vault...</div>
       ) : (
-         <NotesList notes={notes} />
+         <NotesList notes={notes} onNoteUpdated={handleUpdated} onNoteDeleted={handleDeleted} />
       )}
     </div>
   )

@@ -50,5 +50,16 @@ export function useNotes() {
     if (error) throw error;
   };
 
-  return { getNotes, getHighPriorityNotes, createNote, deleteNote };
+  const updateNote = async (id, updates) => {
+    if (!user) throw new Error('Not logged in');
+    const { data, error } = await supabase
+      .from('notes')
+      .update(updates)
+      .eq('id', id)
+      .select('*, tracks(name)');
+    if (error) throw error;
+    return data[0];
+  };
+
+  return { getNotes, getHighPriorityNotes, createNote, deleteNote, updateNote };
 }

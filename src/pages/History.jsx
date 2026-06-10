@@ -12,12 +12,24 @@ import {
   CheckCircle, 
   XCircle, 
   AlertCircle,
-  Calendar
+  Calendar,
+  Edit2,
+  Trash2,
+  Check,
+  X
 } from 'lucide-react';
 
 export default function History() {
-  const { getTracks, getAllSessions, getAllMilestones } = useSupabase();
-  const { getJobs } = useJobs();
+  const { 
+    getTracks, 
+    getAllSessions, 
+    getAllMilestones,
+    updateSession,
+    deleteSession,
+    updateMilestone,
+    deleteMilestone 
+  } = useSupabase();
+  const { getJobs, updateJob, deleteJob } = useJobs();
 
   // State
   const [tracks, setTracks] = useState([]);
@@ -25,6 +37,10 @@ export default function History() {
   const [milestones, setMilestones] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Editing state
+  const [editingActivityId, setEditingActivityId] = useState(null);
+  const [editData, setEditData] = useState({});
 
   // Month navigation state
   const [currentMonthDate, setCurrentMonthDate] = useState(() => {
@@ -39,7 +55,7 @@ export default function History() {
   const [timeRange, setTimeRange] = useState('monthly'); // monthly, all-time
   const [selectedTrackId, setSelectedTrackId] = useState('all');
 
-  useEffect(() => {
+  const fetchData = () => {
     setLoading(true);
     Promise.all([
       getTracks(),
@@ -56,6 +72,10 @@ export default function History() {
       console.error("Error fetching history data:", err);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   // Track map for easy lookup
@@ -64,6 +84,83 @@ export default function History() {
     tracks.forEach(t => { map[t.id] = t; });
     return map;
   }, [tracks]);
+
+  // Edit / Delete Handlers
+  const startEdit = (activity) => {
+    let progressValue = activity.raw.progress_percent;
+    const track = trackMap[activity.raw.track_id];
+    if (activity.type === 'reading' && track?.target_count && progressValue !== null) {
+      progressValue = Math.round((progressValue / 100) * track.target_count);
+    }
+
+    setEditingActivityId(activity.id);
+    setEditData({
+      duration_minutes: activity.raw.duration_minutes !== undefined ? activity.raw.duration_minutes : '',
+      progress_percent: progressValue !== null && progressValue !== undefined ? progressValue : '',
+      note: activity.raw.note || activity.raw.notes || '', // covers both
+      label: activity.raw.label || '',
+      outcome: activity.raw.outcome || '',
+      company: activity.raw.company || '',
+      role: activity.raw.role || '',
+      status: activity.raw.status || '',
+      notes: activity.raw.notes || ''
+    });
+  };
+
+  const saveActivityEdit = async (activity) => {
+    try {
+      if (activity.type === 'reading' || activity.type === 'learning') {
+        let prog = editData.progress_percent !== '' ? Number(editData.progress_percent) : null;
+        const track = trackMap[activity.raw.track_id];
+        if (activity.type === 'reading' && track?.target_count && prog !== null) {
+          prog = (prog / track.target_count) * 100;
+          prog = Math.min(100, Math.max(0, prog));
+        }
+
+        await updateSession(activity.raw.id, {
+          duration_minutes: editData.duration_minutes !== '' ? Number(editData.duration_minutes) : 0,
+          progress_percent: prog,
+          note: editData.note
+        });
+      } else if (activity.type === 'wakeup' || activity.type === 'milestone') {
+        await updateMilestone(activity.raw.id, {
+          label: editData.label,
+          outcome: editData.outcome || 'pending',
+          note: editData.note
+        });
+      } else if (activity.type === 'jobs') {
+        await updateJob(activity.raw.id, {
+          company: editData.company,
+          role: editData.role,
+          status: editData.status || 'applied',
+          notes: editData.note || editData.notes
+        });
+      }
+      setEditingActivityId(null);
+      fetchData();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save changes. Make sure DB policies are valid.");
+    }
+  };
+
+  const deleteActivity = async (activity) => {
+    if (!confirm('Are you sure you want to delete this activity log permanently?')) return;
+    try {
+      if (activity.type === 'reading' || activity.type === 'learning') {
+        await deleteSession(activity.raw.id);
+      } else if (activity.type === 'wakeup' || activity.type === 'milestone') {
+        await deleteMilestone(activity.raw.id);
+      } else if (activity.type === 'jobs') {
+        await deleteJob(activity.raw.id);
+      }
+      fetchData();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete. Ensure database access policies allow this.");
+    }
+  };
+
 
   // Navigate months
   const prevMonth = () => {
@@ -459,66 +556,220 @@ export default function History() {
             </div>
           ) : (
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">
-              {filteredActivities.map(activity => (
-                <div 
-                  key={activity.id} 
-                  className="p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 hover:bg-slate-50/50 transition duration-150 group"
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Circle Icon Badge */}
-                    <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm mt-0.5">
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    
-                    {/* Title & Details */}
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="font-extrabold text-slate-900 text-[15px]">{activity.title}</h4>
+              {filteredActivities.map(activity => {
+                const isEditing = editingActivityId === activity.id;
+
+                return (
+                  <div 
+                    key={activity.id} 
+                    className="p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 hover:bg-slate-50/50 transition duration-150 group"
+                  >
+                    {isEditing ? (
+                      <div className="flex-1 flex flex-col gap-3">
+                        <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Edit {activity.type === 'jobs' ? 'Job Application' : activity.type === 'reading' || activity.type === 'learning' ? 'Study Log' : 'Milestone'}
+                          </span>
+                        </div>
                         
-                        {/* Type specific badges */}
-                        {activity.type === 'jobs' && (
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider border ${getJobStatusBadge(activity.status)}`}>
-                            {activity.status}
-                          </span>
-                        )}
+                        <div className="flex flex-wrap items-end gap-3">
+                          {/* Render type-specific form fields */}
+                          {(activity.type === 'reading' || activity.type === 'learning') && (
+                            <>
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Mins</label>
+                                <input 
+                                  type="number"
+                                  className="p-2 border border-slate-200 rounded-lg text-xs w-20 font-bold focus:outline-blue-500"
+                                  value={editData.duration_minutes}
+                                  onChange={e => setEditData({ ...editData, duration_minutes: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">
+                                  {activity.type === 'reading' ? 'Page' : 'Prog (%)'}
+                                </label>
+                                <input 
+                                  type="number"
+                                  className="p-2 border border-slate-200 rounded-lg text-xs w-20 font-bold focus:outline-blue-500"
+                                  value={editData.progress_percent}
+                                  onChange={e => setEditData({ ...editData, progress_percent: e.target.value })}
+                                />
+                              </div>
+                            </>
+                          )}
 
-                        {(activity.type === 'wakeup' || activity.type === 'milestone') && (
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider border ${getOutcomeBadge(activity.outcome)}`}>
-                            {activity.outcome}
-                          </span>
-                        )}
+                          {(activity.type === 'wakeup' || activity.type === 'milestone') && (
+                            <>
+                              <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Details</label>
+                                <input 
+                                  type="text"
+                                  className="p-2 border border-slate-200 rounded-lg text-xs font-bold focus:outline-blue-500 w-full"
+                                  value={editData.label}
+                                  onChange={e => setEditData({ ...editData, label: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Outcome</label>
+                                <select
+                                  className="p-2 border border-slate-200 rounded-lg text-xs font-bold bg-white focus:outline-blue-500"
+                                  value={editData.outcome}
+                                  onChange={e => setEditData({ ...editData, outcome: e.target.value })}
+                                >
+                                  <option value="pass">Pass</option>
+                                  <option value="fail">Fail</option>
+                                  <option value="pending">Pending</option>
+                                </select>
+                              </div>
+                            </>
+                          )}
+
+                          {activity.type === 'jobs' && (
+                            <>
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Company</label>
+                                <input 
+                                  type="text"
+                                  className="p-2 border border-slate-200 rounded-lg text-xs font-bold w-32 focus:outline-blue-500"
+                                  value={editData.company}
+                                  onChange={e => setEditData({ ...editData, company: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Role</label>
+                                <input 
+                                  type="text"
+                                  className="p-2 border border-slate-200 rounded-lg text-xs font-bold w-32 focus:outline-blue-500"
+                                  value={editData.role}
+                                  onChange={e => setEditData({ ...editData, role: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Status</label>
+                                <select
+                                  className="p-2 border border-slate-200 rounded-lg text-xs font-bold bg-white focus:outline-blue-500"
+                                  value={editData.status}
+                                  onChange={e => setEditData({ ...editData, status: e.target.value })}
+                                >
+                                  <option value="applied">Applied</option>
+                                  <option value="round1">Round 1</option>
+                                  <option value="round2">Round 2</option>
+                                  <option value="offer">Offer</option>
+                                  <option value="rejected">Rejected</option>
+                                </select>
+                              </div>
+                            </>
+                          )}
+
+                          {/* Common Note field */}
+                          <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Note / Comments</label>
+                            <input 
+                              type="text"
+                              className="p-2 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-blue-500 w-full"
+                              value={editData.note}
+                              onChange={e => setEditData({ ...editData, note: e.target.value })}
+                            />
+                          </div>
+
+                          {/* Save & Cancel Actions */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => saveActivityEdit(activity)}
+                              className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition"
+                              title="Save Changes"
+                            >
+                              <Check size={15} />
+                            </button>
+                            <button
+                              onClick={() => setEditingActivityId(null)}
+                              className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition"
+                              title="Cancel"
+                            >
+                              <X size={15} />
+                            </button>
+                          </div>
+                        </div>
                       </div>
+                    ) : (
+                      <>
+                        <div className="flex items-start gap-4">
+                          {/* Circle Icon Badge */}
+                          <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm mt-0.5">
+                            {getActivityIcon(activity.type)}
+                          </div>
+                          
+                          {/* Title & Details */}
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-extrabold text-slate-900 text-[15px]">{activity.title}</h4>
+                              
+                              {/* Type specific badges */}
+                              {activity.type === 'jobs' && (
+                                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider border ${getJobStatusBadge(activity.status)}`}>
+                                  {activity.status}
+                                </span>
+                              )}
 
-                      <p className="text-slate-600 text-sm mt-1 font-medium leading-relaxed">
-                        {activity.details}
-                      </p>
+                              {(activity.type === 'wakeup' || activity.type === 'milestone') && (
+                                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider border ${getOutcomeBadge(activity.outcome)}`}>
+                                  {activity.outcome}
+                                </span>
+                              )}
+                            </div>
 
-                      {activity.note && (
-                        <p className="text-slate-500 text-xs italic mt-2 bg-slate-50 border border-slate-100 px-3 py-2 rounded-lg font-medium">
-                          "{activity.note}"
-                        </p>
-                      )}
-                    </div>
+                            <p className="text-slate-600 text-sm mt-1 font-medium leading-relaxed">
+                              {activity.details}
+                            </p>
+
+                            {activity.note && (
+                              <p className="text-slate-500 text-xs italic mt-2 bg-slate-50 border border-slate-100 px-3 py-2 rounded-lg font-medium">
+                                "{activity.note}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Date & Actions Badge */}
+                        <div className="md:text-right flex-shrink-0 flex items-center md:flex-col md:items-end justify-between md:justify-start gap-2 min-w-[120px]">
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border border-slate-100 px-2 py-1 rounded md:bg-transparent md:border-0 md:p-0">
+                            {activity.date.toLocaleDateString(undefined, { 
+                              weekday: 'short', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            {activity.date.toLocaleTimeString(undefined, { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </span>
+
+                          {/* Actions (visible on hover) */}
+                          <div className="flex items-center gap-1.5 mt-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition duration-150">
+                            <button 
+                              onClick={() => startEdit(activity)}
+                              className="text-slate-400 hover:text-blue-600 transition p-1.5 bg-slate-50 hover:bg-blue-50 rounded-lg border border-slate-100 shadow-sm"
+                              title="Edit log entry"
+                            >
+                              <Edit2 size={13}/>
+                            </button>
+                            <button 
+                              onClick={() => deleteActivity(activity)}
+                              className="text-slate-400 hover:text-red-600 transition p-1.5 bg-slate-50 hover:bg-rose-50 rounded-lg border border-slate-100 shadow-sm"
+                              title="Delete log entry"
+                            >
+                              <Trash2 size={13}/>
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
-
-                  {/* Date Badge */}
-                  <div className="md:text-right flex-shrink-0 flex items-center md:flex-col md:items-end justify-between md:justify-start gap-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border border-slate-100 px-2 py-1 rounded md:bg-transparent md:border-0 md:p-0">
-                      {activity.date.toLocaleDateString(undefined, { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-400">
-                      {activity.date.toLocaleTimeString(undefined, { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>

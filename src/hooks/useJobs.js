@@ -24,11 +24,16 @@ export function useJobs() {
     return data[0];
   };
 
-  const updateJob = async (id, status, notes) => {
+  const updateJob = async (id, updatesOrStatus, notes) => {
     if (!user) throw new Error('Not logged in');
     
-    const payload = { status, updated_at: new Date().toISOString() };
-    if (notes !== undefined) payload.notes = notes;
+    let payload = {};
+    if (typeof updatesOrStatus === 'string') {
+      payload = { status: updatesOrStatus, updated_at: new Date().toISOString() };
+      if (notes !== undefined) payload.notes = notes;
+    } else {
+      payload = { ...updatesOrStatus, updated_at: new Date().toISOString() };
+    }
 
     const { data, error } = await supabase
       .from('jobs')
