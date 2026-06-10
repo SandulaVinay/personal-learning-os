@@ -12,6 +12,7 @@ import VelocityChart from '../components/dashboard/VelocityChart';
 import NudgeCard from '../components/dashboard/NudgeCard';
 import JobSummaryCard from '../components/dashboard/JobSummaryCard';
 import ActivityCalendar from '../components/dashboard/ActivityCalendar';
+import DailyQuoteCard from '../components/dashboard/DailyQuoteCard';
 
 export default function Home() {
   const { user } = useAuth();
@@ -168,6 +169,8 @@ export default function Home() {
             </button>
          </div>
       </div>
+
+      <DailyQuoteCard />
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 mb-8 bg-slate-100 p-1 rounded-xl w-fit">
