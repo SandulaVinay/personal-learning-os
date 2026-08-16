@@ -3,7 +3,35 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-slate-50 text-slate-900 m-0 p-0 antialiased font-sans;
+    overflow-x: hidden;
+  }
+
+  button,
+  a {
+    touch-action: manipulation;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    outline: 3px solid rgb(96 165 250 / 0.55);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  * {
+    scrollbar-width: none;
   }
 }
